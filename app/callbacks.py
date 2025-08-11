@@ -1,40 +1,51 @@
-from dash import Output, Input
-from .figures import *
-import json
-
-with open("assets/Team_Names.json") as f2:
-    TEAM_NAME_MAP = json.load(f2)
+from dash import Input, Output
+from app.figures import *
 
 
 def register_callbacks(app):
     @app.callback(
-        Output("graph-content", "figure"), Input("team-year-dropdown", "value")
+        Output("logo-scatter-graph", "figure"),
+        Input("logo-year-dropdown", "value"),
     )
-    def update_team_explorer(year):
-        if year is not None:
-            return gini_vs_row_by_year(year)
+    def _update_logo_scatter(year):
         return gini_vs_row_by_year(year)
 
     @app.callback(
-        Output("salary-histogram", "figure"),
-        Output("gini-output", "children"),
-        Output("roster-output", "children"),
-        Input("team-dropdown", "value"),
-        Input("year-dropdown", "value"),
+        Output("ts-graph", "figure"),
+        Output("ts-info-line", "children"),
+        Output("ts-roster-line", "children"),
+        Input("ts-team", "value"),
+        Input("ts-year", "value"),
     )
-    def update_team_explorer(team, year):
-        if team is None or year is None:
+    def update_team_salary(team, year):
+        year = int(year)
+        if not team or not year:
             return {}, "", ""
-        fig = salary_histogram(team, year)
-        gini, roster = get_gini_and_roster(team, year)
-        full_team_name = TEAM_NAME_MAP.get(team, team)
-        gini_text = f"{full_team_name} — Gini Coefficient: {gini:.3f}"
-        roster_text = f"Roster Size: {roster} players"
-        return fig, gini_text, roster_text
+        fig = salary_histogram(team, int(year))
+        name = TEAM_NAME_MAP.get(team, team)
+        g = get_gini(team, year)
+        roster_size = get_roster_size(team, year)
+        info = f"{name} — Gini Coefficient: {g:.3f}" if g == g else f"{name}"
+        roster = (
+            f"Roster Size: {roster_size} players" if roster_size else "Roster Size: N/A"
+        )
+        return fig, info, roster
 
     @app.callback(
-        [Output("row-plot", "figure"), Output("gini-plot", "figure")],
-        [Input("team-trend-dropdown", "value"), Input("year-slider", "value")],
+        Output("row-trend-graph", "figure"),
+        Output("gini-trend-graph", "figure"),
+        Input("trend-team", "value"),
+        Input("trend-years", "value"),
     )
-    def update_trend_graphs(team, year_range):
-        return team_performance_trends(team, year_range)
+    def _update_team_trends(team, year_range):
+        if not team or not year_range:
+            return {}, {}
+        return team_trend_figures(team, year_range)
+
+    @app.callback(
+        Output("glm-plot", "figure"),
+        Output("glm-table", "data"),
+        Input("logo-year-dropdown", "value"),
+    )
+    def _refresh_glm(_):
+        return glm_curve_fig(), glm_table_records()

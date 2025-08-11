@@ -1,18 +1,66 @@
-# app/figures.py
 import pandas as pd
 import plotly.express as px
 import json
 import numpy as np
 import plotly.graph_objects as go
+from dash import html, dcc
+from app.themes import apply_plot_style
+from app.constants import *
+import re
 
 df_teams = pd.read_csv("data/Teams.csv")
-with open("assets/Team_Logos.json", "r") as f:
+df_teams.columns = df_teams.columns.str.strip()
+df_teams["Year"] = pd.to_numeric(df_teams["Year"], errors="coerce")
+
+
+df_teams.columns = df_teams.columns.str.strip()
+df_all = df_teams[
+    df_teams["Gini"].notnull()
+    & df_teams["ROW"].notnull()
+    & df_teams["ROW_prev_actual"].notnull()
+].copy()
+df_salary = pd.read_csv("data\SalaryData.csv")
+df_glm = pd.read_csv("data\glm_model_results.csv")
+gmm_df = pd.read_csv("data/gmm_model_results.csv")
+gmm_df.columns = gmm_df.columns.str.strip()
+
+with open("app/assets/Team_Logos.json", "r") as f:
     logo_map = json.load(f)
-with open("assets/Team_Names.json") as f2:
+with open("app/assets/Team_Names.json") as f2:
     TEAM_NAME_MAP = json.load(f2)
 
 
+def get_available_years():
+    return sorted(df_teams["Year"].unique())
+
+
+def get_team_options():
+    return [
+        {"label": full_name, "value": abbr}
+        for abbr, full_name in sorted(TEAM_NAME_MAP.items(), key=lambda x: x[1])
+    ]
+
+
+def get_year_options():
+    years = sorted(df_teams["Year"].unique())
+    return [{"label": str(int(y)), "value": int(y)} for y in years]
+
+
+def get_gini(team: str, year: int) -> float:
+    row = df_teams[(df_teams["Team"] == team) & (df_teams["Year"] == year)]
+    return float(row["Gini"].iloc[0]) if not row.empty else float("nan")
+
+
+def get_roster_size(team: str, year: int) -> int:
+    year = int(year)
+    sub = df_salary[(df_salary["Team"] == team) & (df_salary["Year"] == year)]
+    if sub.empty:
+        return 0
+    return int(sub["Player"].nunique(dropna=True))
+
+
 def gini_vs_row_by_year(year):
+    year = int(year)
     filtered_df = df_teams[df_teams["Year"] == year]
 
     fig = px.scatter(
@@ -47,129 +95,143 @@ def gini_vs_row_by_year(year):
                 )
             )
 
-    fig.update_traces(marker_opacity=0)
-    fig.update_layout(
-        title=f"Gini Coefficient vs ROW in {year}",
-        plot_bgcolor="#FFFFFF",
-        hoverlabel=dict(bgcolor="white", font=dict(size=13)),
-        height=711,
-        width=885,
-        autosize=False,
-        margin=dict(l=20, r=20, t=40, b=20),
+    fig.update_traces(
+        marker_opacity=0,
+        hovertemplate="<b>%{hovertext}</b><br>Gini=%{x:.3f}<br>ROW=%{y}<extra></extra>",
     )
+    fig = apply_plot_style(fig, title=f"Gini Coefficient vs ROW in {year}")
     return fig
 
 
-def get_available_years():
-    return sorted(df_teams["Year"].unique())
+def salary_histogram(team: str, year: int):
+    filtered = df_salary[
+        (df_salary["Team"] == team) & (df_salary["Year"] == year)
+    ].copy()
+    filtered = filtered.sort_values("Cap Hit", ascending=False)
 
-
-def get_team_options():
-    df = pd.read_csv("data/Teams.csv")
-    df.columns = df.columns.str.strip()
-    teams = df[["Team", "Team Name"]].drop_duplicates().sort_values("Team Name")
-    return [
-        {"label": name, "value": abbr}
-        for abbr, name in zip(teams["Team"], teams["Team Name"])
-    ]
-
-
-def get_year_options():
-    df = pd.read_csv("data/Teams.csv")
-    years = sorted(df["Year"].unique())
-    return [{"label": str(year), "value": year} for year in years]
-
-
-def salary_histogram(team, year):
-    df = pd.read_csv("data/SalaryData.csv")
-    filtered = df[(df["Team"] == team) & (df["Year"] == year)]
     full_team_name = TEAM_NAME_MAP.get(team, team)
+    title = f"{full_team_name} Player Salaries in {year}"
     fig = px.bar(
-        filtered, x="Player", y="Cap Hit", title=f"{full_team_name} Salary in {year}"
+        filtered,
+        x="Player",
+        y="Cap Hit",
+        title=title,
+        text=None,
     )
+    fig.update_traces(
+        marker_color=NAVY,
+        marker_line_color=NAVY,
+        marker_line_width=0.8,
+        opacity=0.9,
+        hovertemplate="<b>%{x}</b><br>Cap Hit: %{y:$,.0f}<extra></extra>",
+    )
+    fig = apply_plot_style(fig, title=title)
+    fig.update_xaxes(tickangle=-40, title=None)
+    fig.update_yaxes(title="Cap Hit ($)")
     return fig
 
 
-def get_gini_and_roster(team, year):
-    df = pd.read_csv("data/Teams.csv")
-    filtered = df[(df["Team"] == team) & (df["Year"] == year)]
-    gini = filtered["Gini"].iloc[0]
-    roster_size = filtered["RosterSize"].iloc[0]
-    return gini, roster_size
+def team_salary_selection():
+    years = get_available_years()
+    default_year = int(max(years))
+    team_opts = get_team_options()
+    default_team = team_opts[0]["value"] if team_opts else None
 
 
-def team_performance_trends(team, year_range):
-    df = pd.read_csv("data/Teams.csv")
-    filtered = df[
-        (df["Team"] == team)
-        & (df["Year"] >= year_range[0])
-        & (df["Year"] <= year_range[1])
-    ]
-    full_team_name = TEAM_NAME_MAP.get(team, team)
-    row_fig = px.line(
-        filtered,
-        x="Year",
-        y="ROW",
-        title=f"{full_team_name} ROW Over Time",
-        markers=True,
+def team_trend_figures(team: str, year_range: list):
+    start, end = int(year_range[0]), int(year_range[1])
+    filtered = (
+        df_teams[
+            (df_teams["Team"] == team)
+            & (df_teams["Year"] >= start)
+            & (df_teams["Year"] <= end)
+        ]
+        .sort_values("Year")
+        .copy()
     )
-    gini_fig = px.line(
-        filtered,
-        x="Year",
-        y="Gini",
-        title=f"{full_team_name} Gini Coefficient Over Time",
-        markers=True,
+    name = TEAM_NAME_MAP.get(team, team)
+
+    # ROW Over Time
+    row_fig = px.line(filtered, x="Year", y="ROW", markers=True)
+    row_fig.update_traces(
+        mode="lines+markers",
+        hovertemplate="Year %{x}<br>ROW %{y}<extra></extra>",
+        line=dict(color=NAVY),
+        marker=dict(color=NAVY),
     )
+    row_fig.update_yaxes(title="ROW")
+    row_fig.update_xaxes(dtick=1, title=None)
+    row_fig = apply_plot_style(row_fig, title=f"{name} ROW Over Time")
+
+    # Gini Over Time
+    gini_fig = px.line(filtered, x="Year", y="Gini", markers=True)
+    gini_fig.update_traces(
+        mode="lines+markers",
+        hovertemplate="Year %{x}<br>Gini %{y:.3f}<extra></extra>",
+        line=dict(color=NAVY),
+        marker=dict(color=NAVY),
+    )
+    gini_fig.update_yaxes(title="Gini")
+    gini_fig.update_xaxes(dtick=1, title=None)
+    gini_fig = apply_plot_style(gini_fig, title=f"{name} Gini Coefficient Over Time")
+
     return row_fig, gini_fig
 
 
-def gini_vs_row_with_glm_curve():
-    # GLM Coefficient Data
-    glm = pd.read_csv("data/glm_model_results.csv")
-    glm = glm.set_index("Term")["Estimate"].to_dict()
-
-    beta0 = glm.get("Intercept", 0)
-    beta1 = glm.get("Gini", 0)
-    beta2 = glm.get("Gini2", 0)
-    beta3 = glm.get("Prev_ROW", 0)
-    # Team Data
-    df = pd.read_csv("data/Teams.csv")
-    df.columns = df.columns.str.strip()
-    df = df[
-        df["Gini"].notnull() & df["ROW"].notnull() & df["ROW_prev_actual"].notnull()
-    ]
+def glm_curve_fig():
+    glm = df_glm.set_index("Term")["Estimate"].to_dict()
+    beta0 = glm.get("Intercept", 0.0)
+    beta1 = glm.get("Gini", 0.0)
+    beta2 = glm.get("Gini2", 0.0)
+    beta3 = glm.get("Prev_ROW", 0.0)
 
     fig = px.scatter(
-        df,
+        df_all,
         x="Gini",
         y="ROW",
-        hover_name="Team Name",
+        hover_name="Team",
         labels={"Gini": "Gini Coefficient", "ROW": "Regulation + Overtime Wins"},
-        title="Gini vs ROW with Fitted GLM Curve",
     )
-    gini_range = np.linspace(df["Gini"].min(), df["Gini"].max(), 200)
-    row_prev_mean = df["ROW_prev_actual"].mean()
+    fig.update_traces(marker=dict(size=7, color=NAVY), selector=dict(mode="markers"))
 
+    gini_range = np.linspace(df_all["Gini"].min(), df_all["Gini"].max(), 250)
+    row_prev_mean = float(df_all["ROW_prev_actual"].mean())
     log_lambda = (
-        beta0 + beta1 * gini_range + beta2 * gini_range**2 + beta3 * row_prev_mean
+        beta0 + beta1 * gini_range + beta2 * (gini_range**2) + beta3 * row_prev_mean
     )
     predicted_row = np.exp(log_lambda)
-
     fig.add_trace(
         go.Scatter(
             x=gini_range,
             y=predicted_row,
             mode="lines",
             name="Fitted GLM Curve",
-            line=dict(color="red", width=2),
+            line=dict(width=2, color=LIGHT_RED),
+            hovertemplate="Gini %{x:.3f}<br>Pred ROW %{y:.1f}<extra></extra>",
         )
     )
 
-    fig.update_layout(
-        plot_bgcolor="#fff",
-        hoverlabel=dict(bgcolor="white", font_size=12),
-        height=600,
-        width=900,
+    fig.update_traces(marker=dict(size=7), selector=dict(mode="markers"))
+    fig.update_yaxes(title="ROW")
+    fig.update_xaxes(title="Gini")
+    fig = apply_plot_style(
+        fig,
+        title="Gini vs ROW with Fitted GLM Curve",
     )
-
     return fig
+
+
+def glm_table_cols():
+    return [{"name": col, "id": col} for col in df_glm.columns]
+
+
+def glm_table_records():
+    return df_glm.to_dict("records")
+
+
+def gmm_table_cols():
+    return [{"name": col, "id": col} for col in gmm_df.columns]
+
+
+def gmm_table_records():
+    return gmm_df.to_dict("records")
