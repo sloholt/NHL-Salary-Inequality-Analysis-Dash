@@ -1,0 +1,58 @@
+body {
+  background-color: #f7fafc;
+  background-image:
+    /* Ice texture */ url("https://www.transparenttextures.com/patterns/ice.png"),
+    /* Blue line stripe */
+      linear-gradient(
+        to right,
+        transparent 48%,
+        rgba(33, 117, 187, 0.15) 48%,
+        rgba(33, 117, 187, 0.15) 52%,
+        transparent 52%
+      ),
+    /* Red line stripe (center) */
+      linear-gradient(
+        to right,
+        transparent 48%,
+        rgba(181, 34, 45, 0.15) 48%,
+        rgba(181, 34, 45, 0.15) 52%,
+        transparent 52%
+      ),
+    /* Center ice faceoff circle */
+      radial-gradient(
+        circle 180px at center 180px,
+        rgba(193, 223, 245, 0.12),
+        transparent 70%
+      ),
+    /* Left zone top faceoff circle */
+      radial-gradient(
+        circle 140px at 20% 25%,
+        rgba(193, 223, 245, 0.08),
+        transparent 70%
+      ),
+    /* Left zone bottom faceoff circle */
+      radial-gradient(
+        circle 140px at 20% 75%,
+        rgba(193, 223, 245, 0.08),
+        transparent 70%
+      ),
+    /* Right zone top faceoff circle */
+      radial-gradient(
+        circle 140px at 80% 25%,
+        rgba(193, 223, 245, 0.08),
+        transparent 70%
+      ),
+    /* Right zone bottom faceoff circle */
+      radial-gradient(
+        circle 140px at 80% 75%,
+        rgba(193, 223, 245, 0.08),
+        transparent 70%
+      );
+
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat,
+    no-repeat, no-repeat, no-repeat;
+  background-size: auto, 100% 6px, 100% 6px, cover, cover, cover, cover, cover;
+  background-position: top left, top 100px, bottom 50px, top center, top center,
+    top center, top center, top center;
+  background-attachment: fixed;
+}
