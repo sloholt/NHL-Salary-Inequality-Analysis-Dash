@@ -6,7 +6,8 @@ import plotly.graph_objects as go
 from dash import html, dcc
 from app.themes import apply_plot_style
 from app.constants import *
-import re
+from dash import get_asset_url
+
 
 df_teams = pd.read_csv("data/Teams.csv")
 df_teams.columns = df_teams.columns.str.strip()
@@ -75,9 +76,7 @@ def gini_vs_row_by_year(year):
         abbr = row["Team"]
         logo_url = logo_map.get(abbr)
         if logo_url:
-            logo_url = logo_url.replace(
-                "github.com", "raw.githubusercontent.com"
-            ).replace("/blob/", "/")
+            logo_url = get_asset_url(logo_url)
             fig.add_layout_image(
                 dict(
                     source=logo_url,
