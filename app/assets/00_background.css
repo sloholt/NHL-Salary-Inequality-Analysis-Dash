@@ -1,58 +1,57 @@
-body {
-  background-color: #f7fafc;
-  background-image:
-    /* Ice texture */ url("https://www.transparenttextures.com/patterns/ice.png"),
-    /* Blue line stripe */
-      linear-gradient(
-        to right,
-        transparent 48%,
-        rgba(33, 117, 187, 0.15) 48%,
-        rgba(33, 117, 187, 0.15) 52%,
-        transparent 52%
-      ),
-    /* Red line stripe (center) */
-      linear-gradient(
-        to right,
-        transparent 48%,
-        rgba(181, 34, 45, 0.15) 48%,
-        rgba(181, 34, 45, 0.15) 52%,
-        transparent 52%
-      ),
-    /* Center ice faceoff circle */
-      radial-gradient(
-        circle 180px at center 180px,
-        rgba(193, 223, 245, 0.12),
-        transparent 70%
-      ),
-    /* Left zone top faceoff circle */
-      radial-gradient(
-        circle 140px at 20% 25%,
-        rgba(193, 223, 245, 0.08),
-        transparent 70%
-      ),
-    /* Left zone bottom faceoff circle */
-      radial-gradient(
-        circle 140px at 20% 75%,
-        rgba(193, 223, 245, 0.08),
-        transparent 70%
-      ),
-    /* Right zone top faceoff circle */
-      radial-gradient(
-        circle 140px at 80% 25%,
-        rgba(193, 223, 245, 0.08),
-        transparent 70%
-      ),
-    /* Right zone bottom faceoff circle */
-      radial-gradient(
-        circle 140px at 80% 75%,
-        rgba(193, 223, 245, 0.08),
-        transparent 70%
-      );
+/* Fill the viewport for the background layer */
+html,
+body,
+#_dash-app-content,
+#react-entry-point {
+  height: 100%;
+  margin: 0;
+}
 
-  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat,
-    no-repeat, no-repeat, no-repeat;
-  background-size: auto, 100% 6px, 100% 6px, cover, cover, cover, cover, cover;
-  background-position: top left, top 100px, bottom 50px, top center, top center,
-    top center, top center, top center;
-  background-attachment: fixed;
+/* Ice image as the page background */
+body::before {
+  content: "";
+  position: fixed; /* stays put while scrolling */
+  inset: 0;
+  z-index: -1;
+
+  /* the image + subtle tints/vignette to match the look */
+  background: radial-gradient(
+      120% 90% at 50% -10%,
+      rgba(255, 255, 255, 0.45),
+      rgba(255, 255, 255, 0) 60%
+    ),
+    radial-gradient(
+      120% 120% at 50% 120%,
+      rgba(0, 0, 0, 0.35),
+      rgba(0, 0, 0, 0) 45%
+    ),
+    url("/assets/rink1.png");
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+  background-repeat: no-repeat;
+
+  /* gentle punch so it feels icy but not too busy */
+  filter: saturate(1.05) contrast(1.05);
+}
+
+/* Optional: make content readable on top of the ice */
+.page-container {
+  padding: 20px;
+}
+
+.plot-container,
+.cta-box,
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(2px);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 14px;
+}
+
+/* Plotly: let the background show through the figure area */
+.js-plotly-plot,
+.dash-graph,
+.dash-graph .graph {
+  background: transparent !important;
 }

@@ -1,5 +1,5 @@
 # app/themes.py
-from app.constants import PRIMARY_TEXT, NAVY, BG
+from app.constants import *
 from dash import html
 
 
@@ -38,5 +38,9 @@ def apply_plot_style(fig, title=None):
 
 
 RED_LINE = html.Hr(
-    style={"border": "none", "borderTop": "3px solid red", "margin": "20px 0"}
+    style={
+        "border": "none",
+        "borderTop": f"3px solid {LIGHT_RED}",
+        "margin": "20px 0",
+    }
 )

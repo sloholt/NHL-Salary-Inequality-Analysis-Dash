@@ -102,31 +102,63 @@ def gini_vs_row_by_year(year):
     return fig
 
 
-def salary_histogram(team: str, year: int):
-    filtered = df_salary[
-        (df_salary["Team"] == team) & (df_salary["Year"] == year)
-    ].copy()
-    filtered = filtered.sort_values("Cap Hit", ascending=False)
+from app.constants import NAVY  # adjust import path to your project structure
 
-    full_team_name = TEAM_NAME_MAP.get(team, team)
-    title = f"{full_team_name} Player Salaries in {year}"
+
+def salary_histogram(team: str, year: int):
+    sub = df_salary[
+        (df_salary["Team"] == team) & (df_salary["Year"] == int(year))
+    ].copy()
+
+    if sub.empty:
+        fig = px.bar(title=f"No player salary data for {team} in {year}")
+        fig.update_layout(height=520, margin=dict(l=20, r=20, t=50, b=20))
+        return fig
+
+    sub["Cap Hit"] = (
+        sub["Cap Hit"].astype(str).str.replace(r"[^0-9.]", "", regex=True).astype(float)
+    )
+    sub = (
+        sub.groupby(["Player", "Team", "Year"], as_index=False)
+        .agg({"Cap Hit": "max"})
+        .sort_values("Cap Hit", ascending=False)
+    )
+
+    team_total = sub["Cap Hit"].sum()
+    sub["Cap Hit (USD)"] = sub["Cap Hit"].map(lambda x: f"${x:,.0f}")
+    sub["% of Team Total"] = (sub["Cap Hit"] / team_total * 100).round(2)
+
     fig = px.bar(
-        filtered,
+        sub,
         x="Player",
         y="Cap Hit",
-        title=title,
-        text=None,
+        color_discrete_sequence=[NAVY],  # bar color
+        hover_data={
+            "Player": True,
+            "Team": True,
+            "Year": True,
+            "Cap Hit (USD)": True,
+            "% of Team Total": True,
+            "Cap Hit": False,
+        },
+        title=f"{team} Player Salaries — {year}",
     )
-    fig.update_traces(
-        marker_color=NAVY,
-        marker_line_color=NAVY,
-        marker_line_width=0.8,
-        opacity=0.9,
-        hovertemplate="<b>%{x}</b><br>Cap Hit: %{y:$,.0f}<extra></extra>",
+
+    max_salary = sub["Cap Hit"].max()
+    fig.update_yaxes(
+        range=[0, max_salary * 1.1], tickprefix="$", separatethousands=True
     )
-    fig = apply_plot_style(fig, title=title)
-    fig.update_xaxes(tickangle=-40, title=None)
-    fig.update_yaxes(title="Cap Hit ($)")
+    fig.update_xaxes(tickangle=45, color=NAVY)
+    fig.update_yaxes(color=NAVY)
+
+    fig.update_layout(
+        font=dict(color=NAVY),
+        barmode="group",
+        yaxis_title="Cap Hit (USD)",
+        xaxis_title="Player",
+        height=520,
+        margin=dict(l=20, r=20, t=50, b=20),
+    )
     return fig
 
 
