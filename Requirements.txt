@@ -3,3 +3,5 @@ plotly
 gunicorn
 pandas
 numpy
+json
+pathlib

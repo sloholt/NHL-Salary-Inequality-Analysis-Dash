@@ -1,4 +1,5 @@
 import pandas as pd
+from pathlib import Path
 import plotly.express as px
 import json
 import numpy as np
@@ -8,34 +9,48 @@ from app.themes import apply_plot_style
 from app.constants import *
 from dash import get_asset_url
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR   = REPO_ROOT / "data"
+ASSETS_DIR = REPO_ROOT / "app" / "assets"
 
-df_teams = pd.read_csv(r"data/Teams.csv")
+df_teams = pd.read_csv(DATA_DIR / "Teams.csv")
 df_teams.columns = df_teams.columns.str.strip()
 df_teams["Year"] = pd.to_numeric(df_teams["Year"], errors="coerce")
 
-
-df_teams.columns = df_teams.columns.str.strip()
 df_all = df_teams[
     df_teams["Gini"].notnull()
     & df_teams["ROW"].notnull()
     & df_teams["ROW_prev_actual"].notnull()
 ].copy()
-df_salary = pd.read_csv(r"data\SalaryData.csv")
-df_glm = pd.read_csv(r"data\glm_model_results.csv")
-gmm_df = pd.read_csv(r"data/gmm_model_results.csv")
+
+df_salary = pd.read_csv(DATA_DIR / "SalaryData.csv")
+df_glm    = pd.read_csv(DATA_DIR / "glm_model_results.csv")
+gmm_df    = pd.read_csv(DATA_DIR / "gmm_model_results.csv")
 gmm_df.columns = gmm_df.columns.str.strip()
 
-with open(r"app/assets/Team_Logos.json", "r") as f:
+with (ASSETS_DIR / "Team_Logos.json").open("r", encoding="utf-8") as f:
     logo_map = json.load(f)
-with open(r"app/assets/Team_Names.json") as f2:
+
+with (ASSETS_DIR / "Team_Names.json").open("r", encoding="utf-8") as f2:
     TEAM_NAME_MAP = json.load(f2)
 
-
 def get_available_years():
+    """
+    Returns a sorted list of all available years in the teams dataset.
+
+    Returns:
+        list: Sorted list of unique years.
+    """
     return sorted(df_teams["Year"].unique())
 
 
 def get_team_options():
+    """
+    Returns a list of team options for dropdowns, with labels and values.
+
+    Returns:
+        list: List of dictionaries with 'label' (full team name) and 'value' (abbreviation).
+    """
     return [
         {"label": full_name, "value": abbr}
         for abbr, full_name in sorted(TEAM_NAME_MAP.items(), key=lambda x: x[1])
@@ -43,16 +58,42 @@ def get_team_options():
 
 
 def get_year_options():
+    """
+    Returns a list of year options for dropdowns.
+
+    Returns:
+        list: List of dictionaries with 'label' (year as string) and 'value' (year as int).
+    """
     years = sorted(df_teams["Year"].unique())
     return [{"label": str(int(y)), "value": int(y)} for y in years]
 
 
 def get_gini(team: str, year: int) -> float:
+    """
+    Retrieves the Gini coefficient for a given team and year.
+
+    Args:
+        team (str): Team abbreviation.
+        year (int): Year.
+
+    Returns:
+        float: Gini coefficient, or NaN if not found.
+    """
     row = df_teams[(df_teams["Team"] == team) & (df_teams["Year"] == year)]
     return float(row["Gini"].iloc[0]) if not row.empty else float("nan")
 
 
 def get_roster_size(team: str, year: int) -> int:
+    """
+    Returns the number of unique players on a team's roster for a given year.
+
+    Args:
+        team (str): Team abbreviation.
+        year (int): Year.
+
+    Returns:
+        int: Number of unique players, or 0 if no data.
+    """
     year = int(year)
     sub = df_salary[(df_salary["Team"] == team) & (df_salary["Year"] == year)]
     if sub.empty:
@@ -61,6 +102,16 @@ def get_roster_size(team: str, year: int) -> int:
 
 
 def gini_vs_row_by_year(year):
+    """
+    Creates a scatter plot of Gini coefficient vs ROW for all teams in a given year,
+    overlaying team logos.
+
+    Args:
+        year (int): Year to filter data.
+
+    Returns:
+        plotly.graph_objs._figure.Figure: Plotly figure object.
+    """
     year = int(year)
     filtered_df = df_teams[df_teams["Year"] == year]
 
@@ -102,10 +153,17 @@ def gini_vs_row_by_year(year):
     return fig
 
 
-from app.constants import NAVY  # adjust import path to your project structure
-
-
 def salary_histogram(team: str, year: int):
+    """
+    Creates a bar chart of player salaries for a given team and year.
+
+    Args:
+        team (str): Team abbreviation.
+        year (int): Year.
+
+    Returns:
+        plotly.graph_objs._figure.Figure: Plotly figure object.
+    """
     sub = df_salary[
         (df_salary["Team"] == team) & (df_salary["Year"] == int(year))
     ].copy()
@@ -163,6 +221,12 @@ def salary_histogram(team: str, year: int):
 
 
 def team_salary_selection():
+    """
+    Prepares default values and options for team and year selection dropdowns.
+
+    Returns:
+        None
+    """
     years = get_available_years()
     default_year = int(max(years))
     team_opts = get_team_options()
@@ -170,6 +234,16 @@ def team_salary_selection():
 
 
 def team_trend_figures(team: str, year_range: list):
+    """
+    Generates line plots for a team's ROW and Gini coefficient over a range of years.
+
+    Args:
+        team (str): Team abbreviation.
+        year_range (list): [start_year, end_year].
+
+    Returns:
+        tuple: (row_fig, gini_fig) Plotly figure objects.
+    """
     start, end = int(year_range[0]), int(year_range[1])
     filtered = (
         df_teams[
@@ -210,6 +284,12 @@ def team_trend_figures(team: str, year_range: list):
 
 
 def glm_curve_fig():
+    """
+    Plots Gini vs ROW for all teams and overlays the fitted GLM curve.
+
+    Returns:
+        plotly.graph_objs._figure.Figure: Plotly figure object.
+    """
     glm = df_glm.set_index("Term")["Estimate"].to_dict()
     beta0 = glm.get("Intercept", 0.0)
     beta1 = glm.get("Gini", 0.0)
@@ -253,16 +333,40 @@ def glm_curve_fig():
 
 
 def glm_table_cols():
+    """
+    Returns column definitions for the GLM results table.
+
+    Returns:
+        list: List of dictionaries with 'name' and 'id' for each column.
+    """
     return [{"name": col, "id": col} for col in df_glm.columns]
 
 
 def glm_table_records():
+    """
+    Returns the GLM results as a list of records (dicts).
+
+    Returns:
+        list: List of dictionaries, one per row.
+    """
     return df_glm.to_dict("records")
 
 
 def gmm_table_cols():
+    """
+    Returns column definitions for the GMM results table.
+
+    Returns:
+        list: List of dictionaries with 'name' and 'id' for each column.
+    """
     return [{"name": col, "id": col} for col in gmm_df.columns]
 
 
 def gmm_table_records():
+    """
+    Returns the GMM results as a list of records (dicts).
+
+    Returns:
+        list: List of dictionaries, one per row.
+    """
     return gmm_df.to_dict("records")

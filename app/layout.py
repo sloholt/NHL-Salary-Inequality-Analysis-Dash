@@ -10,6 +10,10 @@ default_year = int(min(years))
 
 
 def logo_scatter_section():
+    """
+    Returns the layout section for the league-wide Gini vs ROW scatter plot.
+    Includes year dropdown, explanatory text, and the plot container.
+    """
     return html.Div(
         [
             html.H3("League Wide Gini vs ROW by Year"),
@@ -50,6 +54,10 @@ def logo_scatter_section():
 
 
 def team_salary_selection():
+    """
+    Returns the layout section for team salary visualization.
+    Includes team/year dropdowns, info box, and salary histogram plot.
+    """
     return html.Div(
         [
             html.H3("Team Salary"),
@@ -131,6 +139,10 @@ def team_salary_selection():
 
 
 def gini_vs_row_section():
+    """
+    Returns the layout section for team Gini vs ROW trends.
+    Includes team dropdown, year slider, and two side-by-side trend plots.
+    """
     return html.Div(
         [
             html.H3("Gini vs Regulation + Overtime Wins"),
@@ -218,6 +230,10 @@ def gini_vs_row_section():
 
 
 def glm_model_section():
+    """
+    Returns the layout section for the Poisson GLM model analysis.
+    Includes model explanation, formula, results table, and fitted curve plot.
+    """
     return html.Div(
         [
             html.H3("GLM Model"),
@@ -339,6 +355,10 @@ its square, and the previous season's ROW. Using a log-link, the model is:""",
 
 
 def gmm_model_section():
+    """
+    Returns the layout section for the dynamic panel GMM model analysis.
+    Includes model explanation, formula, results table, and summary text.
+    """
     return html.Div(
         [
             html.H3("GMM Model"),
@@ -454,6 +474,10 @@ def gmm_model_section():
 
 
 def model_comparison_summary_panel():
+    """
+    Returns a summary comparison table of the Poisson GLM and dynamic GMM models.
+    Includes tooltips for each cell explaining model features and differences.
+    """
     columns = [
         {"name": "Feature", "id": "feature"},
         {"name": "Poisson GLM", "id": "glm"},
@@ -635,6 +659,10 @@ def model_comparison_summary_panel():
 
 
 def model_comparison_section():
+    """
+    Returns the layout section for model comparison.
+    Includes explanatory text and the model comparison summary panel.
+    """
     return html.Div(
         [
             html.H3("Poisson GLM vs Dynamic Panel GMM"),

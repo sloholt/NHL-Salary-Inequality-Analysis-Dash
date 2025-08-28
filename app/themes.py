@@ -1,3 +1,10 @@
+"""
+Themes and styling utilities for NHL Salary Inequality Analysis Dash app.
+
+Provides functions and constants for consistent plot and layout styling,
+including color schemes, fonts, and reusable HTML components.
+"""
+
 # app/themes.py
 from app.constants import *
 from dash import html
