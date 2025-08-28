@@ -13,8 +13,8 @@ This repository contains the interactive dashboard and code for:
 > July 2025
 
 The dashboard visualizes how intra-team salary inequality affects NHL team performance, leveraging both a Poisson Generalized Linear Model (GLM) and a dynamic panel Generalized Method of Moments (GMM). Results reveal a concave relationship: teams perform best when balancing high-salary stars with cost-effective depth players.
-
 Visit [https://sloholt.github.io/NHL-Salary-Inequality-Analysis/](https://sloholt.github.io/NHL-Salary-Inequality-Analysis/) to read the full paper!
+
 ---
 
 ## Key Features & Findings
