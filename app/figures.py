@@ -9,7 +9,7 @@ from app.constants import *
 from dash import get_asset_url
 
 
-df_teams = pd.read_csv("data/Teams.csv")
+df_teams = pd.read_csv(r"data/Teams.csv")
 df_teams.columns = df_teams.columns.str.strip()
 df_teams["Year"] = pd.to_numeric(df_teams["Year"], errors="coerce")
 
@@ -20,14 +20,14 @@ df_all = df_teams[
     & df_teams["ROW"].notnull()
     & df_teams["ROW_prev_actual"].notnull()
 ].copy()
-df_salary = pd.read_csv("data\SalaryData.csv")
-df_glm = pd.read_csv("data\glm_model_results.csv")
-gmm_df = pd.read_csv("data/gmm_model_results.csv")
+df_salary = pd.read_csv(r"data\SalaryData.csv")
+df_glm = pd.read_csv(r"data\glm_model_results.csv")
+gmm_df = pd.read_csv(r"data/gmm_model_results.csv")
 gmm_df.columns = gmm_df.columns.str.strip()
 
-with open("app/assets/Team_Logos.json", "r") as f:
+with open(r"app/assets/Team_Logos.json", "r") as f:
     logo_map = json.load(f)
-with open("app/assets/Team_Names.json") as f2:
+with open(r"app/assets/Team_Names.json") as f2:
     TEAM_NAME_MAP = json.load(f2)
 
 
