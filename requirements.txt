@@ -1,6 +1,8 @@
-dash
-plotly
-gunicorn
-pandas
-numpy
-pathlib
+# Core
+dash>=2.14
+plotly>=5.17
+pandas>=2.2
+numpy>=1.26
+
+# Production server (Render/Heroku)
+gunicorn>=21.2
