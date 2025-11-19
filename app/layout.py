@@ -703,7 +703,8 @@ layout = html.Div(
                                     """
 >**"Modeling the Impact of Salary Distribution on NHL Team Success"**
 >*Sloane Holtby, McGill University*
->July 2025
+>July 2025  
+Read the full paper for detailed methodology and findings:https://sloholt.github.io/NHL-Salary-Inequality-Analysis/ 
 """,
                                     style={"whiteSpace": "pre-line"},
                                 )
